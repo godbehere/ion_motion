@@ -1,6 +1,6 @@
 #import csv
 from math import pi
-from math import cos
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -41,7 +41,7 @@ def calculate_mass(mz, z=1):
     mass = (mz*z)/(avagadros*1000)
     return mass
 
-def calculate_motion(init_x,init_y,a,q,mz,step,duration,*optional_arguments):
+def calculate_motion(init_x,init_y,a,q,mz,step,duration,magnetic_field=False,B=1.4,theta=pi/2,*optional_arguments):
     x_motion = np.array([init_x])   #an array to contain all x positions. first index is set to initial x position
     y_motion = np.array([init_y])   #an array to contain all y positions. first index is set to initial y position
     m = calculate_mass(mz)          #finds the mass in Kilograms (assuming charge number is 1)
@@ -65,6 +65,11 @@ def calculate_motion(init_x,init_y,a,q,mz,step,duration,*optional_arguments):
         current_x_index = len(x_motion)-1           #sets the current index so that current ion position can be referenced
         current_x = x_motion[current_x_index]       #sets the current position using current index
         fx = fx_trap(mz,time,current_x,v,u)         #uses trapping force function to calculate force on ion due to RF/DC quadrupole 
+        
+        if magnetic_field == True:
+            f_mag_x = magnetic_force(electron_q,current_v_x,B,theta)
+            fx += f_mag_x
+        
         acc_x = fx/m                                #calculates current acceleration using force and mass
         current_v_x += acc_x*step                   #calculates change in velocity and adds it to the current velocity
         current_x += current_v_x*step               #calculates change in position and adds it to the current position
@@ -81,6 +86,11 @@ def calculate_motion(init_x,init_y,a,q,mz,step,duration,*optional_arguments):
         current_y_index = len(y_motion)-1           #sets the current index so that current ion positioncan be referenced
         current_y = y_motion[current_y_index]       #sets the current position using current index
         fy = fy_trap(mz,time,current_y,v,u)         #uses trapping force function to calculate force on ion due to RF/DC quadrupole 
+        
+        if magnetic_field == True:
+            f_mag_y = magnetic_force(electron_q,current_v_y,B,theta)
+            fy += f_mag_y
+        
         acc_y = fy/m                                #calculates current acceleration using force and mass
         current_v_y += acc_y*step                   #calculates change in velocity and adds it to the current velocity
         current_y += current_v_y*step               #calculates change in position and adds it to the current position
@@ -112,7 +122,7 @@ def fx_trap(mz,t,x,v,u):
     #m = calculate_mass(mz)
     electron = electron_q
     x_pos = x
-    f = -(2*electron*(v*cos(freq*t) + u)*x_pos)/r**2
+    f = -(2*electron*(v*math.cos(freq*t) + u)*x_pos)/r**2
     #print('The frequency is: {}'.format(freq))
     #print('Quad radius is: {}m'.format(r))
     #print('Mass of molecule is: {}kg'.format(m))
@@ -128,7 +138,7 @@ def fy_trap(mz,t,y,v,u):
     #m = calculate_mass(mz)
     electron = electron_q
     y_pos = y
-    f = (2*electron*(v*cos(freq*t) + u)*y_pos)/r**2
+    f = (2*electron*(v*math.cos(freq*t) + u)*y_pos)/r**2
     #print('Quad radius is: {}m'.format(r))
     #print('Mass of molecule is: {}kg'.format(m))
     #electron = -2.527*10**-29
@@ -138,8 +148,12 @@ def fy_trap(mz,t,y,v,u):
     #print('The force in the Y direction is: {} Newtons'.format(f))
     return f
 
+def magnetic_force(charge,v,B=1.4,theta=pi/2):
+    f = charge * v * B * math.sin(theta)
+    return f
 
 #print(find_q(261))
 #print(find_a(31))
-calculate_motion(1,-1,.203,.706,500,.0000001,.00005)
+calculate_motion(1,-1,.203,.706,500,.0000001,.00005,False)
 #print(calculate_mass(500))
+#print(magnetic_force(20e-9,10,5e-5))
