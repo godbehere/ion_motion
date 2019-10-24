@@ -103,7 +103,7 @@ def calculate_motion(init_x,init_y,a,q,mz,step,duration,flag_unstable=False,magn
         #print("Position @ {} = {}".format(time, current_x))
         
         if flag_unstable:
-            if current_x > default_r * 1000 or current_y > default_r * 1000:        #check if ion position is outside r naught
+            if abs(current_x) > default_r * 1000 or abs(current_y) > default_r * 1000:        #check if ion position is outside r naught
                 steps = np.array([x for x in np.arange(step,time+(2*step),step)])   #regenerates steps array for plotting purposes
                 print("ION MOTION IS NOT STABLE")                                   #tells user that motion is not stable
                 unstable_motion = True                                              #sets unstable motion flag to True
@@ -163,6 +163,8 @@ def magnetic_force(charge,v,B=1.4,theta=pi/2):
 
 #print(find_q(261))
 #print(find_a(31))
-calculate_motion(1,-1,.3,.706,500,.0000001,.00005,True,False)
+custom_q = find_q(369,609)
+custom_a = find_a(54,609)
+calculate_motion(1,-1,custom_a,custom_q,609,.0000001,.0001,True,True,0.1)
 #print(calculate_mass(500))
 #print(magnetic_force(20e-9,10,5e-5))
