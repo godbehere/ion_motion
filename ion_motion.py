@@ -42,7 +42,7 @@ def calculate_mass(mz, z=1):
     return mass
 
 def calculate_motion(init_x,init_y,a,q,mz,step,duration,flag_unstable=False,magnetic_field=False,B=1.4,theta=pi/2,*optional_arguments):
-    unstable_motion = False
+    unstable_motion = False         #flag for unstable ion motion
     x_motion = np.array([init_x])   #an array to contain all x positions. first index is set to initial x position
     y_motion = np.array([init_y])   #an array to contain all y positions. first index is set to initial y position
     m = calculate_mass(mz)          #finds the mass in Kilograms (assuming charge number is 1)
@@ -103,11 +103,11 @@ def calculate_motion(init_x,init_y,a,q,mz,step,duration,flag_unstable=False,magn
         #print("Position @ {} = {}".format(time, current_x))
         
         if flag_unstable:
-            if current_x > default_r * 1000 or current_y > default_r * 1000:
-                steps = np.array([x for x in np.arange(step,time+(2*step),step)])
-                print("ION MOTION IS NOT STABLE")
-                unstable_motion = True
-                break
+            if current_x > default_r * 1000 or current_y > default_r * 1000:        #check if ion position is outside r naught
+                steps = np.array([x for x in np.arange(step,time+(2*step),step)])   #regenerates steps array for plotting purposes
+                print("ION MOTION IS NOT STABLE")                                   #tells user that motion is not stable
+                unstable_motion = True                                              #sets unstable motion flag to True
+                break                                                               #exits loop
 
     #print(steps)
 
