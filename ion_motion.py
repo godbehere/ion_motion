@@ -5,131 +5,127 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 avagadros = 6.0221409*10**23
-default_f = 0.8
-default_r = .004
-electron_q = -1.602*10**-19
+default_frequency = 0.8
+default_radius = .004
+electron_charge = -1.602*10**-19
 
-def find_v(q, mz = 500, f = default_f, r = default_r):
-    freq = 2 * pi * f * 1000000
-    electron = electron_q
-    m = calculate_mass(mz)
-    v = (q*m*(freq**2)*(r**2))/(4*electron)
-    return v
+def calculate_RF_voltage(q_value, mass_charge_ratio = 500, frequency_Mhz = default_frequency, radius = default_radius):
+    freq = 2 * pi * frequency_Mhz * 1000000
+    electron = electron_charge
+    mass_kg = calculate_mass(mass_charge_ratio)
+    RF_voltage = (q_value*mass_kg*(freq**2)*(radius**2))/(4*electron)
+    return RF_voltage
 
-def find_q(v, mz = 500, f = default_f, r = default_r):
-    freq = 2 * pi * f * 1000000
-    electron = electron_q
-    m = calculate_mass(mz)
-    q = (4*electron*v)/(m*(freq**2)*(r**2))
-    return q
+def calculate_q_value(RF_voltage, mass_charge_ratio = 500, frequency_Mhz = default_frequency, radius = default_radius):
+    freq = 2 * pi * frequency_Mhz * 1000000
+    electron = electron_charge
+    mass_kg = calculate_mass(mass_charge_ratio)
+    q_value = (4*electron*RF_voltage)/(mass_kg*(freq**2)*(radius**2))
+    return q_value
 
-def find_u(a, mz = 500, f = default_f, r = default_r):
-    freq = 2 * pi * f * 1000000
-    electron = electron_q
-    m = calculate_mass(mz)
-    u = (a*m*(freq**2)*(r**2))/(8*electron)
-    return u
+def calculate_DC_voltage(a_value, mass_charge_ratio = 500, frequency_Mhz = default_frequency, radius = default_radius):
+    freq = 2 * pi * frequency_Mhz * 1000000
+    electron = electron_charge
+    mass_kg = calculate_mass(mass_charge_ratio)
+    DC_voltage = (a_value*mass_kg*(freq**2)*(radius**2))/(8*electron)
+    return DC_voltage
 
-def find_a(u, mz = 500, f = default_f, r = default_r):
-    freq = 2 * pi * f * 1000000
-    electron = electron_q
-    m = calculate_mass(mz)
-    a = (8*electron*u)/(m*(freq**2)*(r**2))
-    return a
+def calculate_a_value(DC_voltage, mass_charge_ratio = 500, frequency_Mhz = default_frequency, radius = default_radius):
+    freq = 2 * pi * frequency_Mhz * 1000000
+    electron = electron_charge
+    mass_kg = calculate_mass(mass_charge_ratio)
+    a_value = (8*electron*DC_voltage)/(mass_kg*(freq**2)*(radius**2))
+    return a_value
 
-def calculate_mass(mz, z=1):
-    mass = (mz*z)/(avagadros*1000)
-    return mass
+def calculate_mass(mass_charge_ratio, charge_number=1):
+    mass_kg = (mass_charge_ratio*charge_number)/(avagadros*1000)
+    return mass_kg
 
-def calculate_motion(init_x,init_y,a,q,mz,step,duration,flag_unstable=False,magnetic_field=False,B=1.4,theta=pi/2,*optional_arguments):
-    unstable_motion = False         #flag for unstable ion motion
-    x_motion = np.array([init_x])   #an array to contain all x positions. first index is set to initial x position
-    y_motion = np.array([init_y])   #an array to contain all y positions. first index is set to initial y position
-    m = calculate_mass(mz)          #finds the mass in Kilograms (assuming charge number is 1)
-    v = find_v(q,mz)                #finds required RF voltage based on q value and M/Z
-    u = find_u(a,mz)                #finds required DC voltage based on a value and M/Z
-    current_v_x = 0                 #sets the initial velocity in the x direction to 0
-    current_v_y = 0                 #sets the initial velocity in the y direction to 0
-                                    #steps --> an array that contains all of the values to be used as time in future calculations
-                                    #steps cont. - this array is generated based on duration and step size input to this function
-    steps = np.array([x for x in np.arange(step,duration,step)])
-    print('RF Voltage(V) is: {}v'.format(v))
-    print('DC Voltage(U) is: {}v'.format(u))
-    #print(steps)
+def calculate_motion(initial_x_position,initial_y_position,a,q,mass_charge_ratio,step_size,duration,flag_unstable=False,magnetic_field=False,B=1.4,theta=pi/2,*optional_arguments):
+    unstable_motion = False         
+    x_motion_array = np.array([initial_x_position])   
+    y_motion_array = np.array([initial_y_position])   
+    mass_kg = calculate_mass(mass_charge_ratio)
+    RF_voltage = calculate_RF_voltage(q,mass_charge_ratio)
+    DC_voltage = calculate_DC_voltage(a,mass_charge_ratio)
+    current_velocity_in_x = 0                 
+    current_velocity_in_y = 0                 
+                                    
+    time_steps = np.array([x for x in np.arange(step_size,duration,step_size)])
+    print('RF Voltage(V) is: {}v'.format(RF_voltage))
+    print('DC Voltage(U) is: {}v'.format(DC_voltage))
 
-    #this for loop is used to calculate the motion of ions
-    for time in steps:
+    for current_time in time_steps:
             
             #---------------------------------#
             #--------Calculate X Steps--------#
             #---------------------------------#
-        current_x_index = len(x_motion)-1           #sets the current index so that current ion position can be referenced
-        current_x = x_motion[current_x_index]       #sets the current position using current index
-        fx = fx_trap(mz,time,current_x,v,u)         #uses trapping force function to calculate force on ion due to RF/DC quadrupole 
+        current_x_index = len(x_motion_array)-1
+        current_x_position = x_motion_array[current_x_index]
+        force_in_x_direction = fx_trap(mass_charge_ratio,current_time,current_x_position,RF_voltage,DC_voltage)
         
         if magnetic_field == True:
-            f_mag_x = magnetic_force(electron_q,current_v_x,B,theta)
-            fx += f_mag_x
+            f_mag_x = magnetic_force(electron_charge,current_velocity_in_x,B,theta)
+            force_in_x_direction += f_mag_x
         
-        acc_x = fx/m                                #calculates current acceleration using force and mass
-        current_v_x += acc_x*step                   #calculates change in velocity and adds it to the current velocity
-        current_x += current_v_x*step               #calculates change in position and adds it to the current position
-        x_motion = np.append(x_motion, current_x)   #adds the new position to the position array
-        #print(time)
-        #acc = -(a-2*q*cos(2*time))*current_x
-        #print("Acceleration @ {} = {}".format(time, acc_x))
-        #print("Velocity @ {} = {}".format(time, current_v_x))
-        #print("Position @ {} = {}".format(time, current_x))
+        acceleration_in_x_direction = force_in_x_direction/mass_kg
+        current_velocity_in_x += acceleration_in_x_direction*step_size
+        current_x_position += current_velocity_in_x*step_size
+        x_motion_array = np.append(x_motion_array, current_x_position)
+        #print(current_time)
+        #acc = -(a-2*q*cos(2*current_time))*current_x_position
+        #print("Acceleration @ {} = {}".format(current_time, acc_x))
+        #print("Velocity @ {} = {}".format(current_time, current_velocity_in_x))
+        #print("Position @ {} = {}".format(current_time, current_x_position))
             
             #----------------------------------#
             #--------Calculate Y Steps---------#
             #----------------------------------#
-        current_y_index = len(y_motion)-1           #sets the current index so that current ion positioncan be referenced
-        current_y = y_motion[current_y_index]       #sets the current position using current index
-        fy = fy_trap(mz,time,current_y,v,u)         #uses trapping force function to calculate force on ion due to RF/DC quadrupole 
+        current_y_index = len(y_motion_array)-1
+        current_y_position = y_motion_array[current_y_index]
+        force_in_y_direction = fy_trap(mass_charge_ratio,current_time,current_y_position,RF_voltage,DC_voltage)
         
         if magnetic_field == True:
-            f_mag_y = magnetic_force(electron_q,current_v_y,B,theta)
-            fy += f_mag_y
+            f_mag_y = magnetic_force(electron_charge,current_velocity_in_y,B,theta)
+            force_in_y_direction += f_mag_y
         
-        acc_y = fy/m                                #calculates current acceleration using force and mass
-        current_v_y += acc_y*step                   #calculates change in velocity and adds it to the current velocity
-        current_y += current_v_y*step               #calculates change in position and adds it to the current position
-        y_motion = np.append(y_motion, current_y)   #adds the new position to the position array
-        #print(time)
-        #acc = -(a-2*q*cos(2*time))*current_x
-        #print("Acceleration @ {} = {}".format(time, acc))
-        #print("Velocity @ {} = {}".format(time, current_v))
-        #print("Position @ {} = {}".format(time, current_x))
+        acceleration_in_y_direction = force_in_y_direction/mass_kg
+        current_velocity_in_y += acceleration_in_y_direction*step_size
+        current_y_position += current_velocity_in_y*step_size
+        y_motion_array = np.append(y_motion_array, current_y_position)
+        #print(current_time)
+        #acc = -(a-2*q*cos(2*current_time))*current_x_position
+        #print("Acceleration @ {} = {}".format(current_time, acc))
+        #print("Velocity @ {} = {}".format(current_time, current_velocity_in))
+        #print("Position @ {} = {}".format(current_time, current_x_position))
         
         if flag_unstable:
-            if abs(current_x) > default_r * 1000 or abs(current_y) > default_r * 1000:        #check if ion position is outside r naught
-                steps = np.array([x for x in np.arange(step,time+(2*step),step)])   #regenerates steps array for plotting purposes
-                print("ION MOTION IS NOT STABLE")                                   #tells user that motion is not stable
-                unstable_motion = True                                              #sets unstable motion flag to True
-                break                                                               #exits loop
+            if abs(current_x_position) > default_radius * 1000 or abs(current_y_position) > default_radius * 1000:
+                time_steps = np.array([x for x in np.arange(step_size,current_time+(2*step_size),step_size)])
+                print("ION MOTION IS NOT STABLE")
+                unstable_motion = True
+                break
 
-    #print(steps)
+    #print(time_steps)
 
-    fig, (ax1, ax2, comb) = plt.subplots(3)         #creates plot for displaying x_pos*time graph; y_pos*time graph; and x_pos&y_pos*time graph
-    fig2, ax3 = plt.subplots(1)                     #creates plot for displaying x*y graph
+    fig, (ax1, ax2, comb) = plt.subplots(3)
+    fig2, ax3 = plt.subplots(1)
     if unstable_motion == False:    
-        steps = np.append(steps, duration)          #adds additional element to steps array to correct for mismatch in length between positions arrays and steps array (this is due to starting the positions arrays with an initial position value)
-    ax1.plot(steps,x_motion,'r-')                   #creates first axis with a red line
-    ax2.plot(steps,y_motion)                        #creates second axis with default line (blue)
-    comb.plot(steps,x_motion,'r-',steps,y_motion)   #creates third axis (which combines the first two)
-    ax3.plot(x_motion,y_motion)                     #creats axis on second plot
-    ax3.set(xlim=(-4,4),ylim=(-4,4))                #sets size for second plot
+        time_steps = np.append(time_steps, duration)
+    ax1.plot(time_steps,x_motion_array,'r-')
+    ax2.plot(time_steps,y_motion_array)
+    comb.plot(time_steps,x_motion_array,'r-',time_steps,y_motion_array)
+    ax3.plot(x_motion_array,y_motion_array)
+    ax3.set(xlim=(-4,4),ylim=(-4,4))
     fig.suptitle('Position vs Time')
     fig2.suptitle('X-Y Plot')
     #ax3.set_aspect('equal','box')
-    plt.show()                                      #shows all plots
+    plt.show()
 
-def fx_trap(mz,t,x,v,u):
-    freq = 2 * pi * default_f * 1000000
-    r = default_r
-    #m = calculate_mass(mz)
-    electron = electron_q
+def fx_trap(mass_charge_ratio,t,x,v,u):
+    freq = 2 * pi * default_frequency * 1000000
+    r = default_radius
+    electron = electron_charge
     x_pos = x
     f = -(2*electron*(v*math.cos(freq*t) + u)*x_pos)/r**2
     #print('The frequency is: {}'.format(freq))
@@ -141,11 +137,10 @@ def fx_trap(mz,t,x,v,u):
     #print('The force in the X direction is: {} Newtons'.format(f))
     return f
 
-def fy_trap(mz,t,y,v,u):
-    freq = 2 * pi * default_f * 1000000
-    r = default_r
-    #m = calculate_mass(mz)
-    electron = electron_q
+def fy_trap(mass_charge_ratio,t,y,v,u):
+    freq = 2 * pi * default_frequency * 1000000
+    r = default_radius
+    electron = electron_charge
     y_pos = y
     f = (2*electron*(v*math.cos(freq*t) + u)*y_pos)/r**2
     #print('Quad radius is: {}m'.format(r))
@@ -157,14 +152,14 @@ def fy_trap(mz,t,y,v,u):
     #print('The force in the Y direction is: {} Newtons'.format(f))
     return f
 
-def magnetic_force(charge,v,B=1.4,theta=pi/2):
-    f = charge * v * B * math.sin(theta)
-    return f
+def magnetic_force(charge,RF_voltage,B=1.4,theta=pi/2):
+    force = charge * RF_voltage * B * math.sin(theta)
+    return force
 
-#print(find_q(261))
-#print(find_a(31))
-custom_q = find_q(369,609)
-custom_a = find_a(54,609)
-calculate_motion(1,-1,custom_a,custom_q,609,.0000001,.0001,True,True,0.1)
+#print(calculate_q_value(261))
+#print(calculate_a_value(31))
+custom_q = calculate_q_value(369,609)
+custom_a = calculate_a_value(45,609)
+calculate_motion(1,-1,.203,.706,609,.00000001,.00005,True,False,1)
 #print(calculate_mass(500))
 #print(magnetic_force(20e-9,10,5e-5))
