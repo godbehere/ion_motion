@@ -121,13 +121,20 @@ def magnetic_force(charge,velocity,B=1.4,theta=pi/2):
     return force
 
 
-def velocity_by_runge_kutta(initial_velocity,step_size,time,mass_charge_ratio,position,RF_voltage,DC_voltage,which_direction,magnetic_field=False,B=0.1):
+def velocity_by_runge_kutta(initial_velocity_x,initial_velocity_y,step_size,time,mass_charge_ratio,position,RF_voltage,DC_voltage,which_direction,magnetic_field=False,B=0.1):
     if which_direction == 'x':
         initial_force = fx_trap(mass_charge_ratio,time,position,RF_voltage,DC_voltage)
+        initial_velocity = initial_velocity_x
+        magnetic_force_multiplier = 1
     else:
         initial_force = fy_trap(mass_charge_ratio,time,position,RF_voltage,DC_voltage)
+        initial_velocity = initial_velocity_y
+        magnetic_force_multiplier = -1
     if magnetic_field == True:
-        initial_force += magnetic_force(electron_charge,initial_velocity,B)
+        if which_direction == 'x':
+            initial_force += magnetic_force(electron_charge,initial_velocity_y,B)*magnetic_force_multiplier
+        else:
+            initial_force += magnetic_force(electron_charge,initial_velocity_x,B)*magnetic_force_multiplier
     mass_kg = calculate_mass(mass_charge_ratio)
     k1 = step_size * (initial_force/mass_kg)
     k2 = step_size * (initial_force/mass_kg + k1/2)
@@ -161,11 +168,11 @@ def calculate_motion_runge_kutta(initial_x_position,initial_y_position,a,q,mass_
 
     for current_time in time_steps:
             
-        current_velocity_in_x = velocity_by_runge_kutta(current_velocity_in_x,step_size,current_time,mass_charge_ratio,current_x_position,RF_voltage,DC_voltage,'x',magnetic_field,B)
+        current_velocity_in_x = velocity_by_runge_kutta(current_velocity_in_x,current_velocity_in_y,step_size,current_time,mass_charge_ratio,current_x_position,RF_voltage,DC_voltage,'x',magnetic_field,B)
         current_x_position = position_by_runge_kutta(current_velocity_in_x,step_size,current_x_position)
         x_motion_array = np.append(x_motion_array, current_x_position)
    
-        current_velocity_in_y = velocity_by_runge_kutta(current_velocity_in_y,step_size,current_time,mass_charge_ratio,current_y_position,RF_voltage,DC_voltage,'y',magnetic_field,B)
+        current_velocity_in_y = velocity_by_runge_kutta(current_velocity_in_x,current_velocity_in_y,step_size,current_time,mass_charge_ratio,current_y_position,RF_voltage,DC_voltage,'y',magnetic_field,B)
         current_y_position = position_by_runge_kutta(current_velocity_in_y,step_size,current_y_position)
         y_motion_array = np.append(y_motion_array, current_y_position)
         
@@ -190,4 +197,4 @@ def calculate_motion_runge_kutta(initial_x_position,initial_y_position,a,q,mass_
     plt.show()
 
 #calculate_motion(1,-1,.203,.706,609,.00000001,.00005,True,False,1)
-calculate_motion_runge_kutta(1,-1,.203,.706,609,.00000001,.00005,True,False,1.5)
+calculate_motion_runge_kutta(1,-1,.203,.706,609,.00000001,.00005,True,False,1)
