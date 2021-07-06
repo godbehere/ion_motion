@@ -196,13 +196,13 @@ def calculate_motion_runge_kutta(initial_x_position,initial_y_position,a,q,mass_
     ax3.set(xlim=(-4,4),ylim=(-4,4))
     fig.suptitle('Position vs Time')
     fig2.suptitle('X-Y Plot')
-    plt.show()
+    #plt.show()
 
-def is_ion_motion_unstable(a,q,mass_charge_ratio,magnetic_field=False,B=1.4,theta=pi/2):
-    initial_x_position = 1
-    initial_y_position = -1
+def is_ion_motion_unstable(a,q,mass_charge_ratio,magnetic_field=True,B=1,theta=pi/2):
+    initial_x_position = .01
+    initial_y_position = -.01
     step_size = .0000001
-    duration = .00003
+    duration = .00005
     unstable_motion = False         
     x_motion_array = np.array([initial_x_position])   
     y_motion_array = np.array([initial_y_position])   
@@ -233,7 +233,7 @@ def is_ion_motion_unstable(a,q,mass_charge_ratio,magnetic_field=False,B=1.4,thet
         return unstable_motion
 
 
-def scan_RF_DC(starting_RF,ending_RF,RF_step,starting_DC,ending_DC,DC_step,mass_charge_ratio):
+def scan_RF_DC(starting_RF,ending_RF,RF_step,starting_DC,ending_DC,DC_step,mass_charge_ratio,magnetic_field=False,B=0):
     RF_steps = np.arange(starting_RF,ending_RF+RF_step,RF_step)
     DC_steps = np.arange(starting_DC,ending_DC+DC_step,DC_step)
     scan_array = np.ndarray(shape=(len(DC_steps),len(RF_steps)))
@@ -245,26 +245,30 @@ def scan_RF_DC(starting_RF,ending_RF,RF_step,starting_DC,ending_DC,DC_step,mass_
         RF_index = 0
         for RF_voltage in RF_steps:
             current_q = calculate_q_value(RF_voltage,mass_charge_ratio)
-            if is_ion_motion_unstable(current_a,current_q,mass_charge_ratio,False)==False:
+            if is_ion_motion_unstable(current_a,current_q,mass_charge_ratio,magnetic_field,B)==False:
                 scan_array[DC_index,RF_index] = 1
             RF_index += 1
         DC_index += 1
     
-    stability_axis = plt.subplot(111)
+    fig3, stability_axis = plt.subplots(1)
     stability_axis.imshow(scan_array,cmap=plt.cm.get_cmap('Blues', 2),extent=[starting_RF,ending_RF,ending_DC,starting_DC])
     stability_axis.set_aspect(2)
     #divider = make_axes_locatable(stability_axis)
     #cax = divider.append_axes("right",size="5%",pad=0.05)
     #plt.colorbar(image, cax=cax)
-    plt.show()
+    #plt.show()
 
     #print(scan_array)
 
 #calculate_motion(1,-1,.203,.706,609,.00000001,.00005,True,False,1)
-#calculate_motion_runge_kutta(1,-1,.206,.706,609,.00000001,.00005,True,True,1.8)
-scan_RF_DC(0,400,5,0,70,2,400)
+
+
+calculate_motion_runge_kutta(.1,-.1,.206,.706,400,.00000001,.00005,True,False,1.8)
+
+#scan_RF_DC(0,400,5,0,70,5,400,False,1.8)
+
 #custom_q = calculate_q_value(10,609)
 #print(is_ion_motion_unstable(.01,custom_q,609,False,10))
-
-
+#print(calculate_RF_voltage(.906,609))
+plt.show()
 
